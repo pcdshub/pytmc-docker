@@ -12,5 +12,6 @@ ENV PYTMC_VERSION      v2.0.0rc1
 
 ADD pytmc_env.yml pytmc_env.yml
 RUN conda create --name pytmc --file pytmc_env.yml
+RUN pip install --upgrade pip
 RUN pip install git+https://github.com/slaclab/pytmc.git@${PYTMC_VERSION}
 RUN pip install git+https://github.com/epicsdeb/pypdb.git@4ad4016
