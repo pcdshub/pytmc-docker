@@ -1,0 +1,12 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+ipython=7.7.0
+ipython_genutils=0.2.0
+jedi=0.15.1
+jinja2=2.10.1
+lxml=4.4.1
+ply=3.11
+pyqt=5.9.2
+python=3.7.4
+qt=5.9.7
+qtpy=1.9.0
