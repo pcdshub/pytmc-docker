@@ -1,0 +1,78 @@
+version: '3.7'
+services:
+    pytmc:
+        image: pcdshub/pytmc:v0.0.0
+        environment:
+            - DISPLAY
+            - EPICS_CA_ADDR_LIST=192.168.99.255
+        volumes:
+            - "$HOME/.Xauthority:/root/.Xauthority:rw"
+            - type: bind
+              source: ${LOCAL_PROJECT_PATH}
+              target: ${DESTINATION_IOC_TOP}
+            - type: volume
+              source: ioc_template
+              target: ${ADS_IOC_PATH}
+            - type: volume
+              source: conda_env
+              target: /opt/conda
+        network_mode: "bridge"
+        dns:
+            - 192.168.99.1
+        entrypoint: /bin/bash -c
+        command:
+            - |
+                echo "test"
+
+    ads-ioc:
+        image: pcdshub/ads-ioc:v0.0.1-1-ge039050
+        volumes:
+            - "$HOME/.Xauthority:/root/.Xauthority:rw"
+            - type: bind
+              source: ${LOCAL_PROJECT_PATH}
+              target: ${DESTINATION_IOC_TOP}
+            - type: volume
+              source: ioc_template
+              target: ${ADS_IOC_PATH}
+            - type: volume
+              source: conda_env
+              target: /opt/conda
+        network_mode: "bridge"
+        depends_on: 
+            - pytmc
+        dns:
+            - 192.168.99.1
+        environment:
+            - DISPLAY
+            - EPICS_CA_ADDR_LIST=192.168.99.255
+        entrypoint: /bin/bash -c
+        command: 
+            - |
+                pushd ${ADS_IOC_PATH}
+                make
+                popd
+
+                mkdir -p ${DESTINATION_IOC_TOP}/iocBoot
+                export PATH=/opt/conda/bin:$$PATH
+                cd ${DESTINATION_IOC_TOP}/iocBoot
+
+                find .. -maxdepth 2 -name '*.tsproj' -print0 | {
+                    while IFS= read -r -d '' tsproj; do
+                        echo "Found project: $$tsproj"
+                        pytmc iocboot "$$tsproj" "$ADS_IOC_PATH/iocBoot/templates" || /bin/true
+                    done
+                }
+                cd ${DESTINATION_IOC_TOP}/iocBoot
+                for ioc in ./ioc-* ; do
+                    echo "Building $$ioc";
+                    pushd $$ioc
+                    mkdir -p .pytmc_build
+                    touch .pytmc_build/temp.db  #  TODO: fix in ads-ioc
+                    make
+                    popd
+                done
+
+volumes:
+    plc_project:
+    conda_env:
+    ioc_template:
